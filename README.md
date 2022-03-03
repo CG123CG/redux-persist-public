@@ -1,70 +1,197 @@
-# Getting Started with Create React App
+# Course
+https://www.udemy.com/course/the-complete-redux-bootcamp-build-4-hands-on-projects/
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# NEW Learned
+A - In case of Reducer1 and rootReducer, useSelector need to be pointed to the Reducer containing the STORE data
 
-## Available Scripts
+B - Persist Storage
 
-In the project directory, you can run:
 
-### `npm start`
+## Basic App setup
+1. Create setup as below for a Todo App. npm installs below
+```
+npm i redux react-redux redux-persist 
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+2. /components/Addtask
+Collects Tasks from the user and invokes dispatch() when button is clicked
+```
+import React, { useState } from 'react'
+import { useDispatch } from 'react-redux'
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+export default function Addtask() {
+    const [aTask, setATask] = useState('')
+    const dispatch = useDispatch()
 
-### `npm test`
+    const dispatchTask = () => {
+        dispatch({
+            type: 'ADD_TASK',
+            payload: aTask
+        })
+    }
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+    return (
+        <div>
+            <input
+                type="text"
+                placeholder="enter a task"
+                onChange={(e) => setATask(e.target.value)}
+                value={aTask}
+            >
+            </input>
+            <button onClick={dispatchTask}>Add Task to Store</button>
+        </div>
+    )
+}
+```
 
-### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. /components/Todolist
+Displays the Todos from the STORE
+```
+import React from 'react'
+import { useSelector } from 'react-redux'
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+export default function Todolist() {
+    //MUST USE store.taskReducer.storeTasks, ELSE ERROR, CAZ MULTIPLE REDUCERS
+    const tasks = useSelector(store => store.taskReducer.storeTasks)
+    const eachtask = tasks.map((todo) => {
+        return <h2 key={tasks.indexOf(todo)}>{todo}</h2>
+    })
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+    return (
+        <div>
+            <h1>Display Todos</h1>
+            {eachtask}
+        </div>
+    )
+}
+```
 
-### `npm run eject`
+4. /reducers/rootReducer
+```
+import { combineReducers } from "redux"
+import taskReducer from './taskReducer'
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+export default combineReducers({
+    taskReducer: taskReducer
+})
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+5. /reducers/taskReducer
+```
+const initialData = {
+    storeTasks: ['SavedTask-1', 'SavedTask-2']
+}
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+function taskReducer(state = initialData, action) {
+    let newState
+    switch (action.type) {
+        case 'ADD_TASK':
+            newState = {
+                ...state,
+                storeTasks: [...state.storeTasks, action.payload]
+            }
+            break
+        default:
+            return state
+    }
+    return newState
+}
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+export default taskReducer
+```
 
-## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+6. /store/configureStore
+```
+import { createStore } from 'redux'
+import rootReducer from '../reducers/rootReducer'
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+function configureStore() {
+    return createStore(
+        rootReducer
+    )
+}
 
-### Code Splitting
+export default configureStore
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+7. App.js
+```
+import './App.css'
+import Todolist from './components/Todolist'
+import Addtask from './components/Addtask'
+import { Provider } from 'react-redux'
+import configureStore from './store/configureStore'
 
-### Analyzing the Bundle Size
+function App() {
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+  const store = configureStore()
 
-### Making a Progressive Web App
+  return (
+    <div className="App">
+      <Provider store={store}>
+        <Todolist />
+        <Addtask />
+      </Provider>
+    </div>
+  )
+}
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+export default App
+```
 
-### Advanced Configuration
+## Persist
+8. In App, import following. PersistGate connects Redux/Persist to React-App
+```
+import { persistStore, persistReducer } from 'redux-persist'
+import storage from 'redux-persist/lib/storage'
+import { PersistGate } from 'redux-persist/integration/react'
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+9. In App, remove below
+```
+const store = configureStore()
+```
 
-### Deployment
+10. In App, add below, configuration file
+```
+const persistConfig = {
+    key: 'root',
+    storage
+  }
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+11. Create a Reducer using persistReducer npm package, as cannot use rootReducer alone here
+```
+import rootReducer from './reducers/rootReducer'
+  //Create a persist Reducer
+  const persistReducerApp = persistReducer(persistConfig, rootReducer)
+```
 
-### `npm run build` fails to minify
+12. Create a Store for persist
+```
+import { createStore } from 'redux'
+  //Create a persist Store
+  const store = createStore(persistReducerApp)
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+13. Create a persistor for the store
+```
+const persistor = persistStore(store)
+```
+
+14. Enable persist storage for Child Components by wrapping them in ```<PersistGate>``` and providing persistor prop
+```
+return (
+    <div className="App">
+      <Provider store={store}>
+        <PersistGate persistor={persistor}>
+          <Todolist />
+          <Addtask />
+        </ PersistGate>
+      </Provider>
+    </div>
+  )
+```
